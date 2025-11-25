@@ -1,0 +1,54 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            output_name: misskey-timeline-watchdog-linux-amd64
+          - os: linux
+            arch: arm64
+            output_name: misskey-timeline-watchdog-linux-arm64
+          - os: windows
+            arch: amd64
+            output_name: misskey-timeline-watchdog-windows-amd64.exe
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.25'
+
+    - name: Get dependencies
+      run: go mod download
+
+    - name: Build Binary
+      env:
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+      run: |
+        go build -v -o ${{ matrix.output_name }} .
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: ${{ matrix.output_name }}
+        path: ${{ matrix.output_name }}
